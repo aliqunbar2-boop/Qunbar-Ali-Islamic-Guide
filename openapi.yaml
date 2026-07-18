@@ -1,0 +1,822 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Islamic Masail Finder API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: categories
+    description: Masail categories
+  - name: masail
+    description: Islamic questions and answers
+  - name: search
+    description: Search operations
+  - name: ai
+    description: AI Islamic Assistant
+  - name: admin
+    description: Admin operations
+  - name: nb-sermons
+    description: Nahjul Balagha Sermons (Khutbat)
+  - name: nb-letters
+    description: Nahjul Balagha Letters (Maktubat)
+  - name: nb-sayings
+    description: Nahjul Balagha Sayings (Hikmat)
+  - name: nb-content
+    description: Nahjul Balagha cross-content operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /categories:
+    get:
+      operationId: getCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [admin]
+      summary: Create a new category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    get:
+      operationId: getCategory
+      tags: [categories]
+      summary: Get category with its masail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Category with masail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryWithMasail"
+        "404":
+          description: Not found
+    put:
+      operationId: updateCategory
+      tags: [admin]
+      summary: Update a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+    delete:
+      operationId: deleteCategory
+      tags: [admin]
+      summary: Delete a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /masail:
+    get:
+      operationId: getMasail
+      tags: [masail]
+      summary: List masail with optional filters
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paginated masail list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MasailPage"
+    post:
+      operationId: createMasla
+      tags: [admin]
+      summary: Create a new masla
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaslaInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Masla"
+
+  /masail/search:
+    get:
+      operationId: searchMasail
+      tags: [search]
+      summary: Search masail by query (Urdu or English)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MaslaWithCategory"
+
+  /masail/latest:
+    get:
+      operationId: getLatestMasail
+      tags: [masail]
+      summary: Get latest masail across all categories
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Latest masail
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MaslaWithCategory"
+
+  /masail/stats:
+    get:
+      operationId: getMasailStats
+      tags: [masail]
+      summary: Get summary stats for dashboard
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MasailStats"
+
+  /masail/{id}:
+    get:
+      operationId: getMasla
+      tags: [masail]
+      summary: Get a single masla by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Masla detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MaslaWithCategory"
+        "404":
+          description: Not found
+    put:
+      operationId: updateMasla
+      tags: [admin]
+      summary: Update a masla
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaslaUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Masla"
+    delete:
+      operationId: deleteMasla
+      tags: [admin]
+      summary: Delete a masla
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── Nahjul Balagha ───────────────────────────────────────────
+  /nb/stats:
+    get:
+      operationId: getNbStats
+      tags: [nb-content]
+      summary: Total counts for sermons, letters and sayings
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbStats"
+
+  /nb/featured:
+    get:
+      operationId: getNbFeatured
+      tags: [nb-content]
+      summary: Featured entries for the home page
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Featured entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NbEntryBrief"
+
+  /nb/search:
+    get:
+      operationId: searchNb
+      tags: [nb-content]
+      summary: Search Nahjul Balagha across titles and content
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [sermon, letter, saying]
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NbEntryBrief"
+
+  /nb/sermons:
+    get:
+      operationId: getNbSermons
+      tags: [nb-sermons]
+      summary: List sermons with optional pagination and tag filter
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated sermons
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbPage"
+
+  /nb/sermons/{number}:
+    get:
+      operationId: getNbSermon
+      tags: [nb-sermons]
+      summary: Get a single sermon by its traditional number
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Sermon detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbEntry"
+        "404":
+          description: Not found
+
+  /nb/letters:
+    get:
+      operationId: getNbLetters
+      tags: [nb-letters]
+      summary: List letters with optional pagination and tag filter
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated letters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbPage"
+
+  /nb/letters/{number}:
+    get:
+      operationId: getNbLetter
+      tags: [nb-letters]
+      summary: Get a single letter by its traditional number
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Letter detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbEntry"
+        "404":
+          description: Not found
+
+  /nb/sayings:
+    get:
+      operationId: getNbSayings
+      tags: [nb-sayings]
+      summary: List sayings with optional pagination and tag filter
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Paginated sayings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbPage"
+
+  /nb/sayings/{number}:
+    get:
+      operationId: getNbSaying
+      tags: [nb-sayings]
+      summary: Get a single saying by its traditional number
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saying detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NbEntry"
+        "404":
+          description: Not found
+
+  /ai/ask:
+    post:
+      operationId: askAI
+      tags: [ai]
+      summary: Ask the AI Islamic Assistant a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIQuestion"
+      responses:
+        "200":
+          description: AI response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIAnswer"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Category:
+      type: object
+      required: [id, name, nameUrdu, slug, masailCount, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        nameUrdu:
+          type: string
+        slug:
+          type: string
+        description:
+          type: ["string", "null"]
+        masailCount:
+          type: integer
+        createdAt:
+          type: string
+
+    CategoryInput:
+      type: object
+      required: [name, nameUrdu, slug]
+      properties:
+        name:
+          type: string
+        nameUrdu:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+
+    CategoryWithMasail:
+      type: object
+      required: [id, name, nameUrdu, slug, masailCount, createdAt, masail]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        nameUrdu:
+          type: string
+        slug:
+          type: string
+        description:
+          type: ["string", "null"]
+        masailCount:
+          type: integer
+        createdAt:
+          type: string
+        masail:
+          type: array
+          items:
+            $ref: "#/components/schemas/Masla"
+
+    Masla:
+      type: object
+      required: [id, question, questionUrdu, answer, answerUrdu, categoryId, reference, createdAt]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        questionUrdu:
+          type: string
+        answer:
+          type: string
+        answerUrdu:
+          type: string
+        categoryId:
+          type: integer
+        reference:
+          type: string
+        createdAt:
+          type: string
+
+    MaslaWithCategory:
+      type: object
+      required: [id, question, questionUrdu, answer, answerUrdu, categoryId, reference, createdAt, category]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        questionUrdu:
+          type: string
+        answer:
+          type: string
+        answerUrdu:
+          type: string
+        categoryId:
+          type: integer
+        reference:
+          type: string
+        createdAt:
+          type: string
+        category:
+          $ref: "#/components/schemas/Category"
+
+    MaslaInput:
+      type: object
+      required: [question, questionUrdu, answer, answerUrdu, categoryId, reference]
+      properties:
+        question:
+          type: string
+        questionUrdu:
+          type: string
+        answer:
+          type: string
+        answerUrdu:
+          type: string
+        categoryId:
+          type: integer
+        reference:
+          type: string
+
+    MaslaUpdate:
+      type: object
+      properties:
+        question:
+          type: string
+        questionUrdu:
+          type: string
+        answer:
+          type: string
+        answerUrdu:
+          type: string
+        categoryId:
+          type: integer
+        reference:
+          type: string
+
+    MasailPage:
+      type: object
+      required: [masail, total, page, limit]
+      properties:
+        masail:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaslaWithCategory"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    MasailStats:
+      type: object
+      required: [totalMasail, totalCategories, categoryCounts]
+      properties:
+        totalMasail:
+          type: integer
+        totalCategories:
+          type: integer
+        categoryCounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
+
+    CategoryCount:
+      type: object
+      required: [categoryId, categoryName, categoryNameUrdu, count]
+      properties:
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        categoryNameUrdu:
+          type: string
+        count:
+          type: integer
+
+    AIQuestion:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+
+    AIAnswer:
+      type: object
+      required: [answer, foundInDatabase, relatedMasail]
+      properties:
+        answer:
+          type: string
+        foundInDatabase:
+          type: boolean
+        relatedMasail:
+          type: array
+          items:
+            $ref: "#/components/schemas/MaslaWithCategory"
+
+    # ─── Nahjul Balagha schemas ────────────────────────────────
+    NbEntry:
+      type: object
+      required: [id, type, number, titleEn, titleAr, arabicText, englishTranslation, urduTranslation, tags, isFeatured, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [sermon, letter, saying]
+        number:
+          type: integer
+        titleEn:
+          type: string
+        titleAr:
+          type: ["string", "null"]
+        arabicText:
+          type: string
+        englishTranslation:
+          type: string
+        urduTranslation:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        isFeatured:
+          type: boolean
+        prevNumber:
+          type: ["integer", "null"]
+        nextNumber:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    NbEntryBrief:
+      type: object
+      required: [id, type, number, titleEn, titleAr, tags, isFeatured, snippet, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [sermon, letter, saying]
+        number:
+          type: integer
+        titleEn:
+          type: string
+        titleAr:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        isFeatured:
+          type: boolean
+        snippet:
+          type: string
+        createdAt:
+          type: string
+
+    NbPage:
+      type: object
+      required: [entries, total, page, limit, tags]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/NbEntryBrief"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+
+    NbStats:
+      type: object
+      required: [totalSermons, totalLetters, totalSayings, totalEntries]
+      properties:
+        totalSermons:
+          type: integer
+        totalLetters:
+          type: integer
+        totalSayings:
+          type: integer
+        totalEntries:
+          type: integer
